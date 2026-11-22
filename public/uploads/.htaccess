@@ -1,0 +1,18 @@
+# ===================================================================
+#  Uploads directory hardening - block script execution
+#  Uploaded files may only ever be opened as static content
+# ===================================================================
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps|phar|pl|py|cgi|asp|aspx|jsp|sh|htaccess|inc)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar
+    RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar
+</IfModule>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
