@@ -109,7 +109,12 @@ export const register = async (req, res) => {
       passing_year_id,
       id_no,
       designation,
-      company_name
+      company_name,
+      blood_group,
+      date_of_birth,
+      gender,
+      file,
+      custom_fields
     } = req.body;
 
     if (!name || !email || !password) {
@@ -143,8 +148,8 @@ export const register = async (req, res) => {
 
     // Insert alumnus record
     await query(
-      `INSERT INTO alumnus (user_id, batch_id, department_id, passing_year_id, id_number, company_designation, company, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO alumnus (user_id, batch_id, department_id, passing_year_id, id_number, company_designation, company, blood_group, date_of_birth, gender, file, custom_fields, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         newUserId,
         batch_id || null,
@@ -153,6 +158,11 @@ export const register = async (req, res) => {
         id_no || null,
         designation || '',
         company_name || '',
+        blood_group || null,
+        date_of_birth || null,
+        gender || null,
+        file || null,
+        typeof custom_fields === 'object' ? JSON.stringify(custom_fields) : (custom_fields || null),
         now,
         now
       ]

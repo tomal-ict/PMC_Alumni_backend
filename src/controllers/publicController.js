@@ -73,6 +73,20 @@ export const getHomeData = async (req, res) => {
       ORDER BY serial ASC
     `);
 
+    // Featured Galleries
+    const rawGalleries = await query(`
+      SELECT pg.id, pg.caption, fm.path as banner_path,
+             (SELECT count(*) FROM photos WHERE photo_gallery_id = pg.id) as total_photos
+      FROM photo_galleries pg
+      LEFT JOIN file_managers fm ON pg.photo = fm.id
+      WHERE pg.status = 1
+      ORDER BY pg.id DESC LIMIT 6
+    `);
+    const galleries = rawGalleries.map(g => ({
+      ...g,
+      banner_url: g.banner_path ? (g.banner_path.startsWith('http') || g.banner_path.startsWith('/') ? g.banner_path : `/${g.banner_path}`) : null
+    }));
+
     return res.secureJson({
       success: true,
       data: {
@@ -85,7 +99,8 @@ export const getHomeData = async (req, res) => {
         events,
         news,
         notices,
-        committee
+        committee,
+        galleries
       }
     });
   } catch (error) {
@@ -193,17 +208,30 @@ export const getAlumniDetail = async (req, res) => {
 
 export const getMetadata = async (req, res) => {
   try {
-    const [batches, departments, passingYears] = await Promise.all([
-      query('SELECT id, name FROM batches ORDER BY name ASC'),
-      query('SELECT id, name FROM departments ORDER BY name ASC'),
-      query('SELECT id, name FROM passing_years ORDER BY name DESC')
+    const [batches, departments, passingYears, regForms] = await Promise.all([
+      query('SELECT id, name FROM batches WHERE status = 1 ORDER BY id ASC'),
+      query('SELECT id, name, short_name FROM departments WHERE status = 1 ORDER BY name ASC'),
+      query('SELECT id, name FROM passing_years WHERE status = 1 ORDER BY name DESC'),
+      query('SELECT * FROM register_forms ORDER BY id DESC LIMIT 1')
     ]);
+
+    const registerForm = regForms.length > 0 ? regForms[0] : null;
+    let customFields = [];
+    if (registerForm && registerForm.custom_fields) {
+      try {
+        customFields = typeof registerForm.custom_fields === 'string'
+          ? JSON.parse(registerForm.custom_fields)
+          : registerForm.custom_fields;
+        if (typeof customFields === 'string') customFields = JSON.parse(customFields);
+      } catch (e) {}
+    }
 
     return res.secureJson({
       success: true,
       batches,
       departments,
-      passingYears
+      passingYears,
+      registerForm: registerForm ? { ...registerForm, custom_fields: customFields } : null
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
